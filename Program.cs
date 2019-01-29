@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Diagnostics;
 
 namespace Hello
@@ -7,7 +8,7 @@ namespace Hello
     {
         static void Main(string[] args)
         {
-            string s = GetStateAtTheBreakPoint("begin:\nadd 010\n add 020\nhlt\n");
+            string s = GetStateAtTheBreakPoint(ParseProgram("prog"));
             Console.WriteLine(s);
         }
 
@@ -38,6 +39,18 @@ namespace Hello
                   line = p.StandardOutput.ReadLine();
                 return p.StandardOutput.ReadLine();
             }
+        }
+
+        static string ParseProgram(string filename)
+        {
+          using (StreamReader sr = File.OpenText(filename))
+          {
+            string res = "";
+            string s;
+            while ((s = sr.ReadLine()) != null)
+              res = String.Concat(String.Concat(res, s), "\n");
+            return res;
+          }
         }
     }
 }
