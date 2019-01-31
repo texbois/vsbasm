@@ -13,6 +13,7 @@ namespace BasmProgramHandler
             // TODO: implement token enum
             // Variables initialization
             int offset = 0;
+            int counter = 1;
             string[] program;
             var mappedProgram = new Dictionary<int, string>();
             var breaks = new Dictionary<int, string>();
@@ -25,27 +26,33 @@ namespace BasmProgramHandler
 
             foreach (string command in program)
             {
-                if (breakpoints.Contains(offset))
+                if (breakpoints.Contains(counter))
                     breaks.Add(offset, command);
                 // If command is comment or blank line then skip it
                 if (Regex.Match(command, "^#").Success || command == "")
+                {
+                    counter += 1;
                     continue;
+                }
                 // If we have ORG command, then update current offset
                 if (Regex.Match(command, "ORG *").Success)
                 {
                     offset = Int32.Parse(Regex.Match(command, "ORG\\s*([0-9A-Fa-f]+)").Groups[1].Value, NumberStyles.HexNumber);
+                    counter += 1;
                     continue;
                 }
                 // If command is label
                 if (Regex.Match(command, ":$").Success)
                 {
                     labels.Add(command, offset);
+                    counter += 1;
                     continue;
                 }
 
                 mappedProgram.Add(offset, command);
 
                 offset += 1;
+                counter += 1;
             }
             return breaks;
         }

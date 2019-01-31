@@ -15,7 +15,7 @@ namespace BasmProgramHandler
 
         public string GetStateAtTheBreakPoint()
         {
-            breaks = AddressHandler.HandleProgram("TextFile1.txt", new List<int> { 1445, 1449 });
+            breaks = AddressHandler.HandleProgram("TextFile1.txt", new List<int> { 10, 14 });
             ProcessStartInfo info = new ProcessStartInfo("java");
             info.Arguments = "-jar -Dmode=cli -Dfile.encoding=UTF8 C:\\Users\\student\\bcomp.jar";
             info.RedirectStandardInput = true;
