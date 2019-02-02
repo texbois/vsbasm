@@ -19,7 +19,7 @@ namespace VSBASM.Deborgar
         {
             frameInfo = new FRAMEINFO();
             frameInfo.m_bstrFuncName = _context.FileName;
-            frameInfo.m_bstrLanguage = "BASM";
+            frameInfo.m_bstrLanguage = Language.Constants.LanguageName;
             frameInfo.m_pFrame = this;
             frameInfo.m_dwValidFields |= enum_FRAMEINFO_FLAGS.FIF_FRAME
                 | enum_FRAMEINFO_FLAGS.FIF_LANGUAGE
@@ -77,8 +77,8 @@ namespace VSBASM.Deborgar
 
         int IDebugStackFrame2.GetLanguageInfo(ref string pbstrLanguage, ref Guid pguidLanguage)
         {
-            pbstrLanguage = "BASM";
-            pguidLanguage = new Guid(Guids.guidBasmLanguage);
+            pbstrLanguage = Language.Constants.LanguageName;
+            pguidLanguage = new Guid(Language.Constants.LanguageId);
             return VSConstants.S_OK;
         }
 

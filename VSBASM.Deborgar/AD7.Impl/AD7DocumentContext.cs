@@ -25,8 +25,8 @@ namespace VSBASM.Deborgar
 
         public int GetLanguageInfo(ref string pbstrLanguage, ref Guid pguidLanguage)
         {
-            pbstrLanguage = "BASM";
-            pguidLanguage = new Guid(Guids.guidBasmLanguage);
+            pbstrLanguage = Language.Constants.LanguageName;
+            pguidLanguage = new Guid(Language.Constants.LanguageId);
             return VSConstants.S_OK;
         }
 
