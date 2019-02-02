@@ -10,19 +10,19 @@ namespace VSBASM.Deborgar
     {
         Dictionary<uint, uint> _lineToAddress = new Dictionary<uint, uint>();
         private readonly string _documentName;
-        private AD7Engine _engine;
+        private IDebugProgram2 _program;
 
-        public BasmBreakpointResolver(AD7Engine engine, string docName)
+        public BasmBreakpointResolver(IDebugProgram2 program, string docName)
         {
             ParseProgram(docName);
             _documentName = docName;
-            _engine = engine;
+            _program = program;
         }
 
         public AD7BreakpointResolution Resolve(TEXT_POSITION location)
         {
             var context = new AD7DocumentContext(_documentName, location, location);
-            return new AD7BreakpointResolution(_engine, _lineToAddress[location.dwLine], context);
+            return new AD7BreakpointResolution(_program, _lineToAddress[location.dwLine], context);
         }
 
         public void ParseProgram(string documentName)

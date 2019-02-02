@@ -95,6 +95,16 @@ namespace VSBASM.Deborgar
         }
     }
 
+    class AD7ThreadEnum : AD7Enum<IDebugThread2, IEnumDebugThreads2>, IEnumDebugThreads2
+    {
+        public AD7ThreadEnum(IDebugThread2[] data) : base(data) { }
+
+        public int Next(uint celt, IDebugThread2[] rgelt, ref uint celtFetched)
+        {
+            return Next(celt, rgelt, out celtFetched);
+        }
+    }
+
     class AD7FrameInfoEnum : AD7Enum<FRAMEINFO, IEnumDebugFrameInfo2>, IEnumDebugFrameInfo2
     {
         public AD7FrameInfoEnum(FRAMEINFO[] data) : base(data)

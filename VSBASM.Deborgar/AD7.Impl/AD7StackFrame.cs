@@ -9,10 +9,10 @@ namespace VSBASM.Deborgar
         readonly AD7DocumentContext _context;
         readonly BasmRunner _runner;
 
-        public AD7StackFrame(AD7DocumentContext context, BasmRunner runner)
+        public AD7StackFrame(BasmRunner runner)
         {
-            _context = context;
             _runner = runner;
+            _context = new AD7DocumentContext(_runner.ProgramFile, new TEXT_POSITION(), new TEXT_POSITION());
         }
 
         public void SetFrameInfo(enum_FRAMEINFO_FLAGS dwFieldSpec, out FRAMEINFO frameInfo)

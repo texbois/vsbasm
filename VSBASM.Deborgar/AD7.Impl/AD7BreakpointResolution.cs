@@ -6,14 +6,14 @@ namespace VSBASM.Deborgar
 {
     class AD7BreakpointResolution : IDebugBreakpointResolution2
     {
-        private AD7Engine _engine;
+        private IDebugProgram2 _program;
         private AD7DocumentContext _context;
 
         public uint Address { get; private set; }
 
-        public AD7BreakpointResolution(AD7Engine engine, uint address, AD7DocumentContext context)
+        public AD7BreakpointResolution(IDebugProgram2 program, uint address, AD7DocumentContext context)
         {
-            _engine = engine;
+            _program = program;
             Address = address;
             _context = context;
         }
@@ -42,7 +42,7 @@ namespace VSBASM.Deborgar
 
             if ((dwFields & enum_BPRESI_FIELDS.BPRESI_PROGRAM) != 0)
             {
-                pBPResolutionInfo[0].pProgram = _engine;
+                pBPResolutionInfo[0].pProgram = _program;
                 pBPResolutionInfo[0].dwFields |= enum_BPRESI_FIELDS.BPRESI_PROGRAM;
             }
 

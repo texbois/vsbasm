@@ -23,6 +23,7 @@ namespace VSBASM.Deborgar
         public readonly string ProgramFile;
         public bool IsRunning { get; private set; }
         public uint ProgramCounter { get; private set; }
+        public AD_PROCESS_ID ProcessId { get; private set; }
         public EngineCallbacks Callbacks { private get; set; }
 
         public State CurrentState = new State("0000");
@@ -32,7 +33,7 @@ namespace VSBASM.Deborgar
             ProgramFile = programFile;
         }
 
-        public AD_PROCESS_ID StartSuspended()
+        public void StartSuspended()
         {
             Debug.Assert(javaProcess == null);
 
@@ -59,10 +60,11 @@ namespace VSBASM.Deborgar
 
             ProgramCounter = uint.Parse(Regex.Match(line, "Программа начинается с адреса\\s*([0-9A-Fa-f]+)").Groups[1].Value, NumberStyles.HexNumber);
 
-            var processId = new AD_PROCESS_ID();
-            processId.ProcessIdType = (uint) enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM;
-            processId.dwProcessId = (uint) javaProcess.Id;
-            return processId;
+            ProcessId = new AD_PROCESS_ID()
+            {
+                ProcessIdType = (uint) enum_AD_PROCESS_ID.AD_PROCESS_ID_SYSTEM,
+                dwProcessId = (uint) javaProcess.Id
+            };
         }
 
         public void LaunchProgram()

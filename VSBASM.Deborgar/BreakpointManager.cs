@@ -12,10 +12,10 @@ namespace VSBASM.Deborgar
 
         public EngineCallbacks Callbacks { get; set; }
 
-        public BreakpointManager(AD7Engine engine, BasmRunner runner)
+        public BreakpointManager(IDebugProgram2 program, BasmRunner runner)
         {
             _backend = new BasmBreakpointBackend(runner);
-            _resolver = new BasmBreakpointResolver(engine, runner.ProgramFile);
+            _resolver = new BasmBreakpointResolver(program, runner.ProgramFile);
         }
 
         public void CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
