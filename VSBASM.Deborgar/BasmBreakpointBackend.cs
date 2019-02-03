@@ -30,7 +30,9 @@ namespace VSBASM.Deborgar
 
         public void Continue()
         {
-            _runner.SetContents(_runner.ProgramCounter, _addressToMemoryContents[_runner.ProgramCounter]);
+            _runner.SetContents(
+                _runner.ExecutionState.ProgramCounter,
+                _addressToMemoryContents[_runner.ExecutionState.ProgramCounter]);
             _runner.Continue();
         }
     }

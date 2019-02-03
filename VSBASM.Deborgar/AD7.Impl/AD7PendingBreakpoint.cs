@@ -10,7 +10,8 @@ namespace VSBASM.Deborgar
     // become children of the pending breakpoint.
     class AD7PendingBreakpoint : IDebugPendingBreakpoint2
     {
-        private BasmBreakpointResolver _resolver;
+        private readonly BreakpointManager _manager;
+
         private BasmBreakpointBackend _backend;
         private EngineCallbacks _callbacks;
         private IDebugBreakpointRequest2 _bpRequest;
@@ -21,9 +22,9 @@ namespace VSBASM.Deborgar
         private bool _enabled = false;
         private bool _deleted = false;
 
-        public AD7PendingBreakpoint(BasmBreakpointResolver resolver, BasmBreakpointBackend backend, EngineCallbacks callbacks, IDebugBreakpointRequest2 pBPRequest)
+        public AD7PendingBreakpoint(BreakpointManager manager, BasmBreakpointBackend backend, EngineCallbacks callbacks, IDebugBreakpointRequest2 pBPRequest)
         {
-            _resolver = resolver;
+            _manager = manager;
             _backend = backend;
             _callbacks = callbacks;
             _bpRequest = pBPRequest;
@@ -89,7 +90,7 @@ namespace VSBASM.Deborgar
             EngineUtils.RequireOk(docPosition.GetFileName(out documentName));
             EngineUtils.RequireOk(docPosition.GetRange(startPosition, endPosition));
 
-            var resolution = _resolver.Resolve(startPosition[0]);
+            var resolution = _manager.ResolveBreakpoint(startPosition[0]);
             _boundBreakpoint = new AD7BoundBreakpoint(_backend, this, resolution);
             _boundBreakpoint.CompleteBind();
 

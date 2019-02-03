@@ -6,13 +6,13 @@ namespace VSBASM.Deborgar
 {
     class AD7StackFrame : IDebugStackFrame2
     {
-        readonly AD7DocumentContext _context;
-        readonly BasmRunner _runner;
+        private readonly AD7DocumentContext _context;
+        private readonly BasmExecutionState _execState;
 
-        public AD7StackFrame(BasmRunner runner)
+        public AD7StackFrame(AD7DocumentContext context, BasmExecutionState execState)
         {
-            _runner = runner;
-            _context = new AD7DocumentContext(_runner.ProgramFile, new TEXT_POSITION(), new TEXT_POSITION());
+            _context = context;
+            _execState = execState;
         }
 
         public void SetFrameInfo(enum_FRAMEINFO_FLAGS dwFieldSpec, out FRAMEINFO frameInfo)
@@ -31,7 +31,7 @@ namespace VSBASM.Deborgar
             pcelt = 1;
 
             DEBUG_PROPERTY_INFO[] propInfo = new DEBUG_PROPERTY_INFO[pcelt];
-            new AD7Property("acc", "Accumulator", _runner.CurrentState.acc)
+            new AD7Property("Accumulator", _execState.Accumulator)
                 .GetPropertyInfo(dwFields, nRadix, dwTimeout, null, 1, propInfo);
 
             ppEnum = new AD7PropertyInfoEnum(propInfo);
@@ -98,13 +98,11 @@ namespace VSBASM.Deborgar
     public class AD7Property : IDebugProperty2
     {
         private readonly string _name;
-        private readonly string _fullName;
-        private readonly string _value;
+        private readonly uint _value;
 
-        public AD7Property(string name, string fullName, string value)
+        public AD7Property(string name, uint value)
         {
             _name = name;
-            _fullName = fullName;
             _value = value;
         }
 
@@ -117,19 +115,19 @@ namespace VSBASM.Deborgar
             if ((dwFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME) != 0)
             {
                 pPropertyInfo[0].bstrName = _name;
-                pPropertyInfo[0].bstrFullName = _fullName;
+                pPropertyInfo[0].bstrFullName = _name;
                 pPropertyInfo[0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_NAME;
             }
 
             if ((dwFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE) != 0)
             {
-                pPropertyInfo[0].bstrValue = _value;
+                pPropertyInfo[0].bstrValue = _value.ToString();
                 pPropertyInfo[0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_VALUE;
             }
 
             if ((dwFields & enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE) != 0)
             {
-                pPropertyInfo[0].bstrType = "HEX";
+                pPropertyInfo[0].bstrType = "16-bit unsigned int";
                 pPropertyInfo[0].dwFields |= enum_DEBUGPROP_INFO_FLAGS.DEBUGPROP_INFO_TYPE;
             }
 

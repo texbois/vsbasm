@@ -1,22 +1,19 @@
 using Microsoft.VisualStudio.Debugger.Interop;
 using System;
-using System.Diagnostics;
 
 namespace VSBASM.Deborgar
 {
     class EngineCallbacks
     {
         private readonly AD7Engine _engine;
-        private readonly DE.BasmProgram _program;
-        private readonly BreakpointManager _breakpointManager;
+        private readonly BasmProgram _program;
         private readonly IDebugEventCallback2 _ad7Callback;
         private readonly IDebugProcess2 _process;
 
-        public EngineCallbacks(AD7Engine engine, DE.BasmProgram program, BreakpointManager bpManager, IDebugEventCallback2 ad7Callback, IDebugProcess2 process)
+        public EngineCallbacks(AD7Engine engine, BasmProgram program, IDebugProcess2 process, IDebugEventCallback2 ad7Callback)
         {
             _engine = engine;
             _program = program;
-            _breakpointManager = bpManager;
             _ad7Callback = ad7Callback;
             _process = process;
         }
@@ -29,21 +26,6 @@ namespace VSBASM.Deborgar
             Send(new AD7EntryPointEvent(), AD7EntryPointEvent.IID);
         }
 
-        public void OnProgramStop(uint address)
-        {
-            IDebugBoundBreakpoint2 breakpoint = _breakpointManager.MaybeGetBreakpoint(address);
-            if (breakpoint != null)
-            {
-                var boundBreakpoints = new AD7BoundBreakpointsEnum(new IDebugBoundBreakpoint2[] { breakpoint });
-                Send(new AD7BreakpointEvent(boundBreakpoints), AD7BreakpointEvent.IID);
-            }
-            else
-            {
-                Debug.WriteLine("OnProgramStop: non-synthetic HLT instruction reached, terminating.");
-                Send(new AD7ProgramDestroyEvent(), AD7ProgramDestroyEvent.IID);
-            }
-        }
-
         public void OnBreakpointBound(AD7BoundBreakpoint boundBreakpoint)
         {
             IDebugPendingBreakpoint2 pendingBreakpoint;
@@ -51,6 +33,17 @@ namespace VSBASM.Deborgar
 
             var eventObject = new AD7BreakpointBoundEvent((AD7PendingBreakpoint) pendingBreakpoint, boundBreakpoint);
             Send(eventObject, AD7BreakpointBoundEvent.IID);
+        }
+
+        public void OnBreakpointHit(IDebugBoundBreakpoint2 breakpoint)
+        {
+            var boundBreakpoints = new AD7BoundBreakpointsEnum(new IDebugBoundBreakpoint2[] { breakpoint });
+            Send(new AD7BreakpointEvent(boundBreakpoints), AD7BreakpointEvent.IID);
+        }
+
+        public void OnProgramTerminated()
+        {
+            Send(new AD7ProgramDestroyEvent(), AD7ProgramDestroyEvent.IID);
         }
 
         private void Send(IDebugEvent2 eventObject, string iidEvent)

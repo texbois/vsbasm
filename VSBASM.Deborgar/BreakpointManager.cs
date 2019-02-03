@@ -1,29 +1,36 @@
 ﻿using Microsoft.VisualStudio.Debugger.Interop;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace VSBASM.Deborgar
 {
     class BreakpointManager
     {
+        private IDebugProgram2 _program;
+        private SourceFile _sourceFile;
+
         private BasmBreakpointBackend _backend;
-        private BasmBreakpointResolver _resolver;
         private List<AD7PendingBreakpoint> _pendingBreakpoints = new List<AD7PendingBreakpoint>();
+        private EngineCallbacks _callbacks;
 
-        public EngineCallbacks Callbacks { get; set; }
-
-        public BreakpointManager(IDebugProgram2 program, BasmRunner runner)
+        public BreakpointManager(IDebugProgram2 program, BasmRunner runner, SourceFile sourceFile, EngineCallbacks callbacks)
         {
+            _program = program;
+            _sourceFile = sourceFile;
+
             _backend = new BasmBreakpointBackend(runner);
-            _resolver = new BasmBreakpointResolver(program, runner.ProgramFile);
+            _callbacks = callbacks;
         }
 
         public void CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
         {
-            Debug.Assert(Callbacks != null);
-            AD7PendingBreakpoint pendingBreakpoint = new AD7PendingBreakpoint(_resolver, _backend, Callbacks, pBPRequest);
+            var pendingBreakpoint = new AD7PendingBreakpoint(this, _backend, _callbacks, pBPRequest);
             _pendingBreakpoints.Add(pendingBreakpoint);
             ppPendingBP = pendingBreakpoint;
+        }
+
+        public AD7BreakpointResolution ResolveBreakpoint(TEXT_POSITION location)
+        {
+            return new AD7BreakpointResolution(_program, _sourceFile.GetLocationAddress(location), _sourceFile.GetLocationContext(location));
         }
 
         public IDebugBoundBreakpoint2 MaybeGetBreakpoint(uint address)

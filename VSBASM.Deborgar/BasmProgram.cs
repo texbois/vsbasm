@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.Debugger.Interop;
 using System;
 using System.Diagnostics;
 
-namespace VSBASM.Deborgar.DE
+namespace VSBASM.Deborgar
 {
     // BasePC does not have the concept of threads, so the executing program and the thread are one.
     class BasmProgram : IDebugProgramNode2, IDebugProgram3, IDebugThread2
@@ -12,18 +12,32 @@ namespace VSBASM.Deborgar.DE
         private const string _programName = "BASM Program";
 
         private readonly BasmRunner _runner;
+        private readonly SourceFile _sourceFile;
 
-        public Guid AttachedGuid { get; set; }
+        public Guid AttachedGuid { get; private set; }
 
-        public BasmProgram(BasmRunner runner)
+        public BasmProgram(BasmRunner runner, SourceFile sourceFile)
         {
             _runner = runner;
+            _sourceFile = sourceFile;
+        }
+
+        public AD_PROCESS_ID StartSuspended()
+        {
+            _runner.StartSuspended();
+            return _runner.ProcessId;
+        }
+
+        public void AttachDebugger(Guid attachedGuid)
+        {
+            AttachedGuid = attachedGuid;
         }
 
         public int EnumFrameInfo(enum_FRAMEINFO_FLAGS dwFieldSpec, uint nRadix, out IEnumDebugFrameInfo2 ppEnum)
         {
             FRAMEINFO frameinfo;
-            var frame = new AD7StackFrame(_runner);
+            var context = _sourceFile.GetAddressContext(_runner.ExecutionState.ProgramCounter);
+            var frame = new AD7StackFrame(context, _runner.ExecutionState);
             frame.SetFrameInfo(dwFieldSpec, out frameinfo);
             ppEnum = new AD7FrameInfoEnum(new FRAMEINFO[] { frameinfo });
             return VSConstants.S_OK;

@@ -19,11 +19,42 @@ namespace VSBASM.Deborgar
         EngineCallbacks _callbacks;
 
         BasmRunner _basmRunner;
-        DE.BasmProgram _basmProgram; 
+        BasmProgram _basmProgram;
+        SourceFile _sourceFile;
 
-        #region IDebugEngine2 Members
+        // After engine initialization, SDM calls LaunchSuspended to start the debuggee in a suspended state.
+        // ResumeProcess and Attach are invoked next.
 
-        int IDebugEngine2.Attach(IDebugProgram2[] rgpPrograms, IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms, IDebugEventCallback2 ad7Callback, enum_ATTACH_REASON dwReason)
+        public int LaunchSuspended(string pszServer, IDebugPort2 port, string exe, string args, string dir, string env, string options, enum_LAUNCH_FLAGS launchFlags, uint hStdInput, uint hStdOutput, uint hStdError, IDebugEventCallback2 ad7Callback, out IDebugProcess2 process)
+        {
+            Debug.Assert(_basmProgram == null);
+
+            _sourceFile = new SourceFile(Path.Combine(dir, exe));
+            _basmRunner = new BasmRunner(_sourceFile, OnProgramStop);
+            _basmProgram = new BasmProgram(_basmRunner, _sourceFile);
+
+            var processId = _basmProgram.StartSuspended();
+            EngineUtils.RequireOk(port.GetProcess(processId, out process));
+
+            Debug.WriteLine("IDebugEngineLaunch2.LaunchSuspended: returning S_OK");
+            return VSConstants.S_OK;
+        }
+
+        public int ResumeProcess(IDebugProcess2 process)
+        {
+            IDebugPort2 port;
+            EngineUtils.RequireOk(process.GetPort(out port));
+            IDebugDefaultPort2 defaultPort = (IDebugDefaultPort2) port;
+
+            IDebugPortNotify2 portNotify;
+            EngineUtils.RequireOk(defaultPort.GetPortNotify(out portNotify));
+            EngineUtils.RequireOk(portNotify.AddProgramNode(_basmProgram));
+
+            Debug.WriteLine("IDebugEngineLaunch2.ResumeProcess: returning S_OK");
+            return VSConstants.S_OK;
+        }
+
+        public int Attach(IDebugProgram2[] rgpPrograms, IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms, IDebugEventCallback2 ad7Callback, enum_ATTACH_REASON dwReason)
         {
             Debug.Assert(_basmProgram != null);
 
@@ -33,18 +64,32 @@ namespace VSBASM.Deborgar
 
             Guid attachedGuid;
             EngineUtils.RequireOk(program.GetProgramId(out attachedGuid));
-            _basmProgram.AttachedGuid = attachedGuid;
+            _basmProgram.AttachDebugger(attachedGuid);
 
-            _breakpointManager = new BreakpointManager(_basmProgram, _basmRunner);
-            _callbacks = new EngineCallbacks(this, _basmProgram, _breakpointManager, ad7Callback, process);
-            _breakpointManager.Callbacks = _callbacks;
-            _basmRunner.Callbacks = _callbacks;
+            _callbacks = new EngineCallbacks(this, _basmProgram, process, ad7Callback);
+            _breakpointManager = new BreakpointManager(_basmProgram, _basmRunner, _sourceFile, _callbacks);
 
             Debug.WriteLine("IDebugEngine2.Attach: invoking load callbacks");
             _callbacks.OnAttach();
 
             return VSConstants.S_OK;
         }
+
+        public void OnProgramStop(uint address)
+        {
+            IDebugBoundBreakpoint2 breakpoint = _breakpointManager.MaybeGetBreakpoint(address);
+            if (breakpoint != null)
+            {
+                _callbacks.OnBreakpointHit(breakpoint);
+            }
+            else
+            {
+                Debug.WriteLine("OnProgramStop: non-synthetic HLT instruction reached, terminating.");
+                _callbacks.OnProgramTerminated();
+            }
+        }
+
+        #region IDebugEngine2 Members
 
         // Requests that all programs being debugged by this DE stop execution the next time one of their threads attempts to run.
         // This is normally called in response to the user clicking on the pause button in the debugger.
@@ -127,36 +172,6 @@ namespace VSBASM.Deborgar
         int IDebugEngineLaunch2.CanTerminateProcess(IDebugProcess2 process)
         {
             return _basmRunner.IsRunning ? VSConstants.S_OK : VSConstants.S_FALSE;
-        }
-
-        int IDebugEngineLaunch2.LaunchSuspended(string pszServer, IDebugPort2 port, string exe, string args, string dir, string env, string options, enum_LAUNCH_FLAGS launchFlags, uint hStdInput, uint hStdOutput, uint hStdError, IDebugEventCallback2 ad7Callback, out IDebugProcess2 process)
-        {
-            Debug.Assert(_basmRunner == null);
-
-            _basmRunner = new BasmRunner(Path.Combine(dir, exe));
-            _basmRunner.StartSuspended();
-
-            EngineUtils.RequireOk(port.GetProcess(_basmRunner.ProcessId, out process));
-
-            Debug.WriteLine("IDebugEngineLaunch2.LaunchSuspended: returning S_OK");
-            return VSConstants.S_OK;
-        }
-
-        // Resume a process launched by IDebugEngineLaunch2.LaunchSuspended
-        int IDebugEngineLaunch2.ResumeProcess(IDebugProcess2 process)
-        {
-            IDebugPort2 port;
-            EngineUtils.RequireOk(process.GetPort(out port));
-            IDebugDefaultPort2 defaultPort = (IDebugDefaultPort2) port;
-
-            IDebugPortNotify2 portNotify;
-            EngineUtils.RequireOk(defaultPort.GetPortNotify(out portNotify));
-            
-            _basmProgram = new DE.BasmProgram(_basmRunner);
-            EngineUtils.RequireOk(portNotify.AddProgramNode(_basmProgram));
-
-            Debug.WriteLine("IDebugEngineLaunch2.ResumeProcess: returning S_OK");
-            return VSConstants.S_OK;
         }
 
         int IDebugEngineLaunch2.TerminateProcess(IDebugProcess2 process)

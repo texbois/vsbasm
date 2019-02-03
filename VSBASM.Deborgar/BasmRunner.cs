@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.Debugger.Interop;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,28 +8,22 @@ namespace VSBASM.Deborgar
 {
     class BasmRunner
     {
-        public class State
-        {
-            public string acc { get; set; }
-            public State(string a)
-            {
-                acc = a;
-            }
-        }
+        public delegate void OnStop(uint address);
+
+        private SourceFile _sourceFile;
+        private OnStop _onStopHandler;
 
         private Process javaProcess;
 
-        public readonly string ProgramFile;
         public bool IsRunning { get; private set; }
-        public uint ProgramCounter { get; private set; }
         public AD_PROCESS_ID ProcessId { get; private set; }
-        public EngineCallbacks Callbacks { private get; set; }
 
-        public State CurrentState = new State("0000");
+        public BasmExecutionState ExecutionState { get; private set; }
 
-        public BasmRunner(string programFile)
+        public BasmRunner(SourceFile sourceFile, OnStop stopHandler)
         {
-            ProgramFile = programFile;
+            _sourceFile = sourceFile;
+            _onStopHandler = stopHandler;
         }
 
         public void StartSuspended()
@@ -49,7 +42,7 @@ namespace VSBASM.Deborgar
             javaProcess.StartInfo = info;
             javaProcess.Start();
 
-            string code = File.ReadAllText(ProgramFile);
+            string code = _sourceFile.GetContents();
             javaProcess.StandardInput.WriteLine("asm");
             javaProcess.StandardInput.WriteLine(code);
             javaProcess.StandardInput.WriteLine("end");
@@ -58,7 +51,9 @@ namespace VSBASM.Deborgar
             while (!line.StartsWith("Программа начинается с адреса"))
                 line = javaProcess.StandardOutput.ReadLine();
 
-            ProgramCounter = uint.Parse(Regex.Match(line, "Программа начинается с адреса\\s*([0-9A-Fa-f]+)").Groups[1].Value, NumberStyles.HexNumber);
+            ExecutionState = new BasmExecutionState(
+               programCounter: uint.Parse(Regex.Match(line, "Программа начинается с адреса\\s*([0-9A-Fa-f]+)").Groups[1].Value, NumberStyles.HexNumber)
+            );
 
             ProcessId = new AD_PROCESS_ID()
             {
@@ -69,9 +64,7 @@ namespace VSBASM.Deborgar
 
         public void LaunchProgram()
         {
-            Debug.Assert(Callbacks != null, "LaunchProgram() must be invoked after EngineCallbacks are set");
-
-            string hexPC = ConvertToHexAddress(ProgramCounter);
+            string hexPC = ConvertToHexAddress(ExecutionState.ProgramCounter);
             javaProcess.StandardInput.WriteLine($"{hexPC} a");
             javaProcess.StandardOutput.ReadLine();
             javaProcess.StandardOutput.ReadLine();
@@ -93,15 +86,17 @@ namespace VSBASM.Deborgar
             javaProcess.StandardOutput.ReadLine(); // Адр Знчн  СК  РА  РК   РД    А  C Адр Знчн
             string line = javaProcess.StandardOutput.ReadLine(); // final program state
 
-            ProgramCounter = uint.Parse(line.Split()[0], NumberStyles.HexNumber) - 1;
-            CurrentState.acc = line.Split()[6];
+            ExecutionState = new BasmExecutionState(
+                programCounter: uint.Parse(line.Split()[0], NumberStyles.HexNumber) - 1,
+                accumulator: uint.Parse(line.Split()[6], NumberStyles.HexNumber)
+            );
 
-            Callbacks.OnProgramStop(ProgramCounter);
+            _onStopHandler(ExecutionState.ProgramCounter);
         }
 
         public void Continue()
         {
-            string hexPC = ConvertToHexAddress(ProgramCounter);
+            string hexPC = ConvertToHexAddress(ExecutionState.ProgramCounter);
             javaProcess.StandardInput.WriteLine($"{hexPC} a");
             javaProcess.StandardOutput.ReadLine();
             javaProcess.StandardOutput.ReadLine();

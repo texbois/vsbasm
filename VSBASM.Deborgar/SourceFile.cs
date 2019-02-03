@@ -6,28 +6,44 @@ using System.Text.RegularExpressions;
 
 namespace VSBASM.Deborgar
 {
-    class BasmBreakpointResolver
+    class SourceFile
     {
-        Dictionary<uint, uint> _lineToAddress = new Dictionary<uint, uint>();
-        private readonly string _documentName;
-        private IDebugProgram2 _program;
+        private Dictionary<uint, uint> _lineToAddress = new Dictionary<uint, uint>();
+        /* Unlike _lineToAddress, _addressToLine does not contain entries for labels, comments, and ORG directives. */
+        private Dictionary<uint, uint> _addressToLine = new Dictionary<uint, uint>();
 
-        public BasmBreakpointResolver(IDebugProgram2 program, string docName)
+        public string FilePath { get; private set; }
+
+        public SourceFile(string filePath)
         {
-            ParseProgram(docName);
-            _documentName = docName;
-            _program = program;
+            FilePath = filePath;
+            ParseProgram();
         }
 
-        public AD7BreakpointResolution Resolve(TEXT_POSITION location)
+        public string GetContents()
         {
-            var context = new AD7DocumentContext(_documentName, location, location);
-            return new AD7BreakpointResolution(_program, _lineToAddress[location.dwLine], context);
+            return File.ReadAllText(FilePath);
         }
 
-        public void ParseProgram(string documentName)
+        public uint GetLocationAddress(TEXT_POSITION location)
         {
-            string[] program = File.ReadAllLines(documentName);
+            return _lineToAddress[location.dwLine];
+        }
+
+        public AD7DocumentContext GetLocationContext(TEXT_POSITION location)
+        {
+            return new AD7DocumentContext(FilePath, location, location);
+        }
+
+        public AD7DocumentContext GetAddressContext(uint address)
+        {
+            var location = new TEXT_POSITION() { dwLine = _addressToLine[address], dwColumn = 0 };
+            return new AD7DocumentContext(FilePath, location, location);
+        }
+
+        private void ParseProgram()
+        {
+            string[] program = File.ReadAllLines(FilePath);
             // TODO: implement token enum
             // Variables initialization
             uint address = 0;
@@ -59,6 +75,7 @@ namespace VSBASM.Deborgar
                 }
 
                 _lineToAddress.Add(lineNumber, address);
+                _addressToLine.Add(address, lineNumber);
 
                 address += 1;
                 lineNumber += 1;
