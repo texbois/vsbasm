@@ -5,8 +5,7 @@ using System.IO;
 
 namespace VSBASM.Deborgar
 {
-    // A document context represents a location within a source file. 
-    class AD7DocumentContext : IDebugDocumentContext2, IEnumDebugCodeContexts2, IDebugCodeContext2
+    class SourceFileContext : IDebugDocumentContext2, IDebugCodeContext2
     {
         private readonly string _filePath;
         private TEXT_POSITION _startPosition;
@@ -14,7 +13,7 @@ namespace VSBASM.Deborgar
 
         public string FileName { get; private set; }
 
-        public AD7DocumentContext(string filePath, TEXT_POSITION begPos, TEXT_POSITION endPos)
+        public SourceFileContext(string filePath, TEXT_POSITION begPos, TEXT_POSITION endPos)
         {
             _filePath = filePath;
             _startPosition = begPos;
@@ -43,7 +42,7 @@ namespace VSBASM.Deborgar
         // The engine only supports one code context per document context.
         int IDebugDocumentContext2.EnumCodeContexts(out IEnumDebugCodeContexts2 ppEnumCodeCxts)
         {
-            ppEnumCodeCxts = this;
+            ppEnumCodeCxts = new AD7DebugCodeContextEnum(new IDebugCodeContext2[] { this });
             return VSConstants.S_OK;
         }
 
@@ -129,42 +128,6 @@ namespace VSBASM.Deborgar
         public int GetDocumentContext(out IDebugDocumentContext2 ppSrcCxt)
         {
             ppSrcCxt = this;
-            return VSConstants.S_OK;
-        }
-
-        #endregion
-
-        #region IEnumDebugCodeContexts2 Members
-
-        int IEnumDebugCodeContexts2.Next(uint celt, IDebugCodeContext2[] rgelt, ref uint pceltFetched)
-        {
-            if (celt == 1)
-            {
-                rgelt[0] = this;
-                pceltFetched = 1;
-            }
-            return VSConstants.S_OK;
-        }
-
-        int IEnumDebugCodeContexts2.Skip(uint celt)
-        {
-            return VSConstants.S_OK;
-        }
-
-        int IEnumDebugCodeContexts2.Reset()
-        {
-            return VSConstants.S_OK;
-        }
-
-        int IEnumDebugCodeContexts2.Clone(out IEnumDebugCodeContexts2 ppEnum)
-        {
-            ppEnum = null;
-            return VSConstants.E_NOTIMPL;
-        }
-
-        int IEnumDebugCodeContexts2.GetCount(out uint pcelt)
-        {
-            pcelt = 1;
             return VSConstants.S_OK;
         }
 

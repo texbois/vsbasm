@@ -12,7 +12,7 @@ namespace VSBASM.Deborgar
             _runner = runner;
         }
 
-        public void Unset(AD7BreakpointResolution resolution)
+        public void Unset(BreakpointResolution resolution)
         {
             if (_addressToMemoryContents.ContainsKey(resolution.Address))
             {
@@ -21,7 +21,7 @@ namespace VSBASM.Deborgar
             }
         }
 
-        public void Set(AD7BreakpointResolution resolution)
+        public void Set(BreakpointResolution resolution)
         {
             string contents = _runner.GetContents(resolution.Address);
             _addressToMemoryContents.Add(resolution.Address, contents);

@@ -30,15 +30,15 @@ namespace VSBASM.Deborgar
             return _lineToAddress[location.dwLine];
         }
 
-        public AD7DocumentContext GetLocationContext(TEXT_POSITION location)
+        public SourceFileContext GetLocationContext(TEXT_POSITION location)
         {
-            return new AD7DocumentContext(FilePath, location, location);
+            return new SourceFileContext(FilePath, location, location);
         }
 
-        public AD7DocumentContext GetAddressContext(uint address)
+        public SourceFileContext GetAddressContext(uint address)
         {
             var location = new TEXT_POSITION() { dwLine = _addressToLine[address], dwColumn = 0 };
-            return new AD7DocumentContext(FilePath, location, location);
+            return new SourceFileContext(FilePath, location, location);
         }
 
         private void ParseProgram()

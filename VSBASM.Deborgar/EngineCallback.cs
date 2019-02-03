@@ -5,12 +5,12 @@ namespace VSBASM.Deborgar
 {
     class EngineCallbacks
     {
-        private readonly AD7Engine _engine;
-        private readonly BasmProgram _program;
+        private readonly DebugEngine _engine;
+        private readonly Program _program;
         private readonly IDebugEventCallback2 _ad7Callback;
         private readonly IDebugProcess2 _process;
 
-        public EngineCallbacks(AD7Engine engine, BasmProgram program, IDebugProcess2 process, IDebugEventCallback2 ad7Callback)
+        public EngineCallbacks(DebugEngine engine, Program program, IDebugProcess2 process, IDebugEventCallback2 ad7Callback)
         {
             _engine = engine;
             _program = program;
@@ -26,12 +26,12 @@ namespace VSBASM.Deborgar
             Send(new AD7EntryPointEvent(), AD7EntryPointEvent.IID);
         }
 
-        public void OnBreakpointBound(AD7BoundBreakpoint boundBreakpoint)
+        public void OnBreakpointBound(BoundBreakpoint boundBreakpoint)
         {
             IDebugPendingBreakpoint2 pendingBreakpoint;
             ((IDebugBoundBreakpoint2) boundBreakpoint).GetPendingBreakpoint(out pendingBreakpoint);
 
-            var eventObject = new AD7BreakpointBoundEvent((AD7PendingBreakpoint) pendingBreakpoint, boundBreakpoint);
+            var eventObject = new AD7BreakpointBoundEvent((PendingBreakpoint) pendingBreakpoint, boundBreakpoint);
             Send(eventObject, AD7BreakpointBoundEvent.IID);
         }
 

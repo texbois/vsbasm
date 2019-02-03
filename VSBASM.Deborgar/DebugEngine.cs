@@ -9,32 +9,32 @@ namespace VSBASM.Deborgar
 {
     [ComVisible(true)]
     [Guid("8355452D-6D2F-41b0-89B8-BB2AA2529E94")]
-    public class AD7Engine : IDebugEngine2, IDebugEngineLaunch2, IDebugEngineProgram2
+    public class DebugEngine : IDebugEngine2, IDebugEngineLaunch2, IDebugEngineProgram2
     {
         public const string DebugEngineId = "{8355452D-6D2F-41b0-89B8-BB2AA2529E94}";
         public const string DebugEngineName = "BASM";
-        public static Guid DebugEngineGuid = new Guid(DebugEngineId);
+        public static readonly Guid DebugEngineGuid = new Guid(DebugEngineId);
 
-        BreakpointManager _breakpointManager;
+        Program _program;
         EngineCallbacks _callbacks;
-
-        BasmRunner _basmRunner;
-        BasmProgram _basmProgram;
-        SourceFile _sourceFile;
+        BreakpointManager _breakpointManager;
 
         // After engine initialization, SDM calls LaunchSuspended to start the debuggee in a suspended state.
         // ResumeProcess and Attach are invoked next.
 
         public int LaunchSuspended(string pszServer, IDebugPort2 port, string exe, string args, string dir, string env, string options, enum_LAUNCH_FLAGS launchFlags, uint hStdInput, uint hStdOutput, uint hStdError, IDebugEventCallback2 ad7Callback, out IDebugProcess2 process)
         {
-            Debug.Assert(_basmProgram == null);
+            Debug.Assert(_program == null);
 
-            _sourceFile = new SourceFile(Path.Combine(dir, exe));
-            _basmRunner = new BasmRunner(_sourceFile, OnProgramStop);
-            _basmProgram = new BasmProgram(_basmRunner, _sourceFile);
+            var sourceFile = new SourceFile(Path.Combine(dir, exe));
+            var runner = new BasmRunner(sourceFile, OnProgramStop);
+            _program = new Program(runner, sourceFile);
 
-            var processId = _basmProgram.StartSuspended();
+            var processId = _program.StartBasmProcess();
             EngineUtils.RequireOk(port.GetProcess(processId, out process));
+
+            _callbacks = new EngineCallbacks(this, _program, process, ad7Callback);
+            _breakpointManager = new BreakpointManager(_program, runner, sourceFile, _callbacks);
 
             Debug.WriteLine("IDebugEngineLaunch2.LaunchSuspended: returning S_OK");
             return VSConstants.S_OK;
@@ -48,7 +48,7 @@ namespace VSBASM.Deborgar
 
             IDebugPortNotify2 portNotify;
             EngineUtils.RequireOk(defaultPort.GetPortNotify(out portNotify));
-            EngineUtils.RequireOk(portNotify.AddProgramNode(_basmProgram));
+            EngineUtils.RequireOk(portNotify.AddProgramNode(_program));
 
             Debug.WriteLine("IDebugEngineLaunch2.ResumeProcess: returning S_OK");
             return VSConstants.S_OK;
@@ -56,7 +56,7 @@ namespace VSBASM.Deborgar
 
         public int Attach(IDebugProgram2[] rgpPrograms, IDebugProgramNode2[] rgpProgramNodes, uint celtPrograms, IDebugEventCallback2 ad7Callback, enum_ATTACH_REASON dwReason)
         {
-            Debug.Assert(_basmProgram != null);
+            Debug.Assert(_program != null);
 
             IDebugProcess2 process;
             IDebugProgram2 program = rgpPrograms[0];
@@ -64,13 +64,28 @@ namespace VSBASM.Deborgar
 
             Guid attachedGuid;
             EngineUtils.RequireOk(program.GetProgramId(out attachedGuid));
-            _basmProgram.AttachDebugger(attachedGuid);
-
-            _callbacks = new EngineCallbacks(this, _basmProgram, process, ad7Callback);
-            _breakpointManager = new BreakpointManager(_basmProgram, _basmRunner, _sourceFile, _callbacks);
+            _program.AttachDebugger(attachedGuid);
 
             Debug.WriteLine("IDebugEngine2.Attach: invoking load callbacks");
+            // The SDM will invoke ContinueFromSynchronousEvent with AD7LoadCompleteEvent. At that point,
+            // breakpoints from design mode will have already been placed, and the program can be launched.
             _callbacks.OnAttach();
+
+            return VSConstants.S_OK;
+        }
+
+        public int ContinueFromSynchronousEvent(IDebugEvent2 eventObject)
+        {
+            if (eventObject is AD7ProgramDestroyEvent)
+            {
+                _breakpointManager = null;
+                _program = null;
+                _callbacks = null;
+            }
+            if (eventObject is AD7LoadCompleteEvent)
+            {
+                _program.Launch();
+            }
 
             return VSConstants.S_OK;
         }
@@ -97,20 +112,6 @@ namespace VSBASM.Deborgar
         int IDebugEngine2.CauseBreak()
         {
             return ((IDebugProgram2) this).CauseBreak();
-        }
-
-        int IDebugEngine2.ContinueFromSynchronousEvent(IDebugEvent2 eventObject)
-        {
-            if (eventObject is AD7ProgramDestroyEvent)
-            {
-                _basmRunner = null;
-            }
-            if (eventObject is AD7LoadCompleteEvent)
-            {
-                _basmRunner.LaunchProgram();
-            }
-
-            return VSConstants.S_OK;
         }
 
         int IDebugEngine2.CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
@@ -171,7 +172,7 @@ namespace VSBASM.Deborgar
 
         int IDebugEngineLaunch2.CanTerminateProcess(IDebugProcess2 process)
         {
-            return _basmRunner.IsRunning ? VSConstants.S_OK : VSConstants.S_FALSE;
+            return VSConstants.S_OK;
         }
 
         int IDebugEngineLaunch2.TerminateProcess(IDebugProcess2 process)

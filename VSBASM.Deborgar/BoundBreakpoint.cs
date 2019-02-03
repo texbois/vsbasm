@@ -4,16 +4,16 @@ using System;
 
 namespace VSBASM.Deborgar
 {
-    class AD7BoundBreakpoint : IDebugBoundBreakpoint2
+    class BoundBreakpoint : IDebugBoundBreakpoint2
     {
-        private AD7PendingBreakpoint _pendingBreakpoint;
-        private AD7BreakpointResolution _resolution;
+        private PendingBreakpoint _pendingBreakpoint;
+        private BreakpointResolution _resolution;
         private BasmBreakpointBackend _backend;
 
         private bool _enabled = true;
         private bool _deleted = false;
 
-        public AD7BoundBreakpoint(BasmBreakpointBackend backend, AD7PendingBreakpoint pendingBreakpoint, AD7BreakpointResolution breakpointResolution)
+        public BoundBreakpoint(BasmBreakpointBackend backend, PendingBreakpoint pendingBreakpoint, BreakpointResolution breakpointResolution)
         {
             _backend = backend;
             _pendingBreakpoint = pendingBreakpoint;

@@ -85,9 +85,7 @@ namespace VSBASM.Deborgar
 
     class AD7ProgramEnum : AD7Enum<IDebugProgram2, IEnumDebugPrograms2>, IEnumDebugPrograms2
     {
-        public AD7ProgramEnum(IDebugProgram2[] data) : base(data)
-        {
-        }
+        public AD7ProgramEnum(IDebugProgram2[] data) : base(data) { }
 
         public int Next(uint celt, IDebugProgram2[] rgelt, ref uint celtFetched)
         {
@@ -107,9 +105,7 @@ namespace VSBASM.Deborgar
 
     class AD7FrameInfoEnum : AD7Enum<FRAMEINFO, IEnumDebugFrameInfo2>, IEnumDebugFrameInfo2
     {
-        public AD7FrameInfoEnum(FRAMEINFO[] data) : base(data)
-        {
-        }
+        public AD7FrameInfoEnum(FRAMEINFO[] data) : base(data) { }
 
         public int Next(uint celt, FRAMEINFO[] rgelt, ref uint celtFetched)
         {
@@ -119,23 +115,22 @@ namespace VSBASM.Deborgar
 
     class AD7PropertyInfoEnum : AD7Enum<DEBUG_PROPERTY_INFO, IEnumDebugPropertyInfo2>, IEnumDebugPropertyInfo2
     {
-        public AD7PropertyInfoEnum(DEBUG_PROPERTY_INFO[] data) : base(data)
-        {
-        }
+        public AD7PropertyInfoEnum(DEBUG_PROPERTY_INFO[] data) : base(data) { }
     }
 
-    class AD7PropertyEnum : AD7Enum<DEBUG_PROPERTY_INFO, IEnumDebugPropertyInfo2>, IEnumDebugPropertyInfo2
+    class AD7DebugCodeContextEnum : AD7Enum<IDebugCodeContext2, IEnumDebugCodeContexts2>, IEnumDebugCodeContexts2
     {
-        public AD7PropertyEnum(DEBUG_PROPERTY_INFO[] properties) : base(properties)
+        public AD7DebugCodeContextEnum(IDebugCodeContext2[] data) : base(data) { }
+
+        public int Next(uint celt, IDebugCodeContext2[] rgelt, ref uint celtFetched)
         {
+            return Next(celt, rgelt, out celtFetched);
         }
     }
 
     class AD7BoundBreakpointsEnum : AD7Enum<IDebugBoundBreakpoint2, IEnumDebugBoundBreakpoints2>, IEnumDebugBoundBreakpoints2
     {
-        public AD7BoundBreakpointsEnum(IDebugBoundBreakpoint2[] breakpoints) : base(breakpoints)
-        {
-        }
+        public AD7BoundBreakpointsEnum(IDebugBoundBreakpoint2[] breakpoints) : base(breakpoints) { }
 
         public int Next(uint celt, IDebugBoundBreakpoint2[] rgelt, ref uint celtFetched)
         {
@@ -145,9 +140,7 @@ namespace VSBASM.Deborgar
 
     class AD7ErrorBreakpointsEnum : AD7Enum<IDebugErrorBreakpoint2, IEnumDebugErrorBreakpoints2>, IEnumDebugErrorBreakpoints2
     {
-        public AD7ErrorBreakpointsEnum(IDebugErrorBreakpoint2[] breakpoints) : base(breakpoints)
-        {
-        }
+        public AD7ErrorBreakpointsEnum(IDebugErrorBreakpoint2[] breakpoints) : base(breakpoints) { }
 
         public int Next(uint celt, IDebugErrorBreakpoint2[] rgelt, ref uint celtFetched)
         {

@@ -8,7 +8,7 @@ namespace VSBASM.Deborgar
 {
     //  When a user creates a new breakpoint, the pending breakpoint is created and is later bound. The bound breakpoints
     // become children of the pending breakpoint.
-    class AD7PendingBreakpoint : IDebugPendingBreakpoint2
+    class PendingBreakpoint : IDebugPendingBreakpoint2
     {
         private readonly BreakpointManager _manager;
 
@@ -17,12 +17,12 @@ namespace VSBASM.Deborgar
         private IDebugBreakpointRequest2 _bpRequest;
         private BP_REQUEST_INFO _requestInfo;
 
-        private AD7BoundBreakpoint _boundBreakpoint;
+        private BoundBreakpoint _boundBreakpoint;
 
         private bool _enabled = false;
         private bool _deleted = false;
 
-        public AD7PendingBreakpoint(BreakpointManager manager, BasmBreakpointBackend backend, EngineCallbacks callbacks, IDebugBreakpointRequest2 pBPRequest)
+        public PendingBreakpoint(BreakpointManager manager, BasmBreakpointBackend backend, EngineCallbacks callbacks, IDebugBreakpointRequest2 pBPRequest)
         {
             _manager = manager;
             _backend = backend;
@@ -40,7 +40,7 @@ namespace VSBASM.Deborgar
             {
                 IDebugBreakpointResolution2 resolution;
                 ((IDebugBoundBreakpoint2) _boundBreakpoint).GetBreakpointResolution(out resolution);
-                if (((AD7BreakpointResolution) resolution).Address == address)
+                if (((BreakpointResolution) resolution).Address == address)
                 {
                     return _boundBreakpoint;
                 }
@@ -59,7 +59,7 @@ namespace VSBASM.Deborgar
             _boundBreakpoint = null;
         }
 
-        public void OnBoundBreakpointDeleted(AD7BoundBreakpoint boundBreakpoint)
+        public void OnBoundBreakpointDeleted(BoundBreakpoint boundBreakpoint)
         {
             Debug.Assert(boundBreakpoint == _boundBreakpoint);
             _boundBreakpoint = null;
@@ -91,7 +91,7 @@ namespace VSBASM.Deborgar
             EngineUtils.RequireOk(docPosition.GetRange(startPosition, endPosition));
 
             var resolution = _manager.ResolveBreakpoint(startPosition[0]);
-            _boundBreakpoint = new AD7BoundBreakpoint(_backend, this, resolution);
+            _boundBreakpoint = new BoundBreakpoint(_backend, this, resolution);
             _boundBreakpoint.CompleteBind();
 
             _callbacks.OnBreakpointBound(_boundBreakpoint);

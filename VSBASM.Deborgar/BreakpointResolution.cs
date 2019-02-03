@@ -4,14 +4,14 @@ using System.Runtime.InteropServices;
 
 namespace VSBASM.Deborgar
 {
-    class AD7BreakpointResolution : IDebugBreakpointResolution2
+    class BreakpointResolution : IDebugBreakpointResolution2
     {
         private IDebugProgram2 _program;
-        private AD7DocumentContext _context;
+        private SourceFileContext _context;
 
         public uint Address { get; private set; }
 
-        public AD7BreakpointResolution(IDebugProgram2 program, uint address, AD7DocumentContext context)
+        public BreakpointResolution(IDebugProgram2 program, uint address, SourceFileContext context)
         {
             _program = program;
             Address = address;

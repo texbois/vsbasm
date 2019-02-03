@@ -9,7 +9,7 @@ namespace VSBASM.Deborgar
         private SourceFile _sourceFile;
 
         private BasmBreakpointBackend _backend;
-        private List<AD7PendingBreakpoint> _pendingBreakpoints = new List<AD7PendingBreakpoint>();
+        private List<PendingBreakpoint> _pendingBreakpoints = new List<PendingBreakpoint>();
         private EngineCallbacks _callbacks;
 
         public BreakpointManager(IDebugProgram2 program, BasmRunner runner, SourceFile sourceFile, EngineCallbacks callbacks)
@@ -23,19 +23,19 @@ namespace VSBASM.Deborgar
 
         public void CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
         {
-            var pendingBreakpoint = new AD7PendingBreakpoint(this, _backend, _callbacks, pBPRequest);
+            var pendingBreakpoint = new PendingBreakpoint(this, _backend, _callbacks, pBPRequest);
             _pendingBreakpoints.Add(pendingBreakpoint);
             ppPendingBP = pendingBreakpoint;
         }
 
-        public AD7BreakpointResolution ResolveBreakpoint(TEXT_POSITION location)
+        public BreakpointResolution ResolveBreakpoint(TEXT_POSITION location)
         {
-            return new AD7BreakpointResolution(_program, _sourceFile.GetLocationAddress(location), _sourceFile.GetLocationContext(location));
+            return new BreakpointResolution(_program, _sourceFile.GetLocationAddress(location), _sourceFile.GetLocationContext(location));
         }
 
         public IDebugBoundBreakpoint2 MaybeGetBreakpoint(uint address)
         {
-            foreach (AD7PendingBreakpoint pendingBreakpoint in _pendingBreakpoints)
+            foreach (PendingBreakpoint pendingBreakpoint in _pendingBreakpoints)
             {
                 IDebugBoundBreakpoint2 bp = pendingBreakpoint.GetIfBoundAtAddress(address);
                 if (bp != null) return bp;
@@ -45,7 +45,7 @@ namespace VSBASM.Deborgar
 
         public void ClearBoundBreakpoints()
         {
-            foreach (AD7PendingBreakpoint pendingBreakpoint in _pendingBreakpoints)
+            foreach (PendingBreakpoint pendingBreakpoint in _pendingBreakpoints)
             {
                 pendingBreakpoint.ClearBoundBreakpoints();
             }

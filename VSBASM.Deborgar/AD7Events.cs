@@ -57,7 +57,7 @@ namespace VSBASM.Deborgar
         public const string IID = "FE5B734C-759D-4E59-AB04-F103343BDD06";
         private IDebugEngine2 _engine;
 
-        public AD7EngineCreateEvent(AD7Engine engine)
+        public AD7EngineCreateEvent(DebugEngine engine)
         {
             _engine = engine;
         }
@@ -104,10 +104,10 @@ namespace VSBASM.Deborgar
     {
         public const string IID = "1dddb704-cf99-4b8a-b746-dabb01dd13a0";
 
-        private AD7PendingBreakpoint _pendingBreakpoint;
-        private AD7BoundBreakpoint _boundBreakpoint;
+        private PendingBreakpoint _pendingBreakpoint;
+        private BoundBreakpoint _boundBreakpoint;
 
-        public AD7BreakpointBoundEvent(AD7PendingBreakpoint pendingBreakpoint, AD7BoundBreakpoint boundBreakpoint)
+        public AD7BreakpointBoundEvent(PendingBreakpoint pendingBreakpoint, BoundBreakpoint boundBreakpoint)
         {
             _pendingBreakpoint = pendingBreakpoint;
             _boundBreakpoint = boundBreakpoint;

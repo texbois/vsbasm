@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace VSBASM.Deborgar
 {
     // BasePC does not have the concept of threads, so the executing program and the thread are one.
-    class BasmProgram : IDebugProgramNode2, IDebugProgram3, IDebugThread2
+    class Program : IDebugProgramNode2, IDebugProgram3, IDebugThread2
     {
         private const string _threadName = "BASM Thread";
         private const string _programName = "BASM Program";
@@ -16,13 +16,13 @@ namespace VSBASM.Deborgar
 
         public Guid AttachedGuid { get; private set; }
 
-        public BasmProgram(BasmRunner runner, SourceFile sourceFile)
+        public Program(BasmRunner runner, SourceFile sourceFile)
         {
             _runner = runner;
             _sourceFile = sourceFile;
         }
 
-        public AD_PROCESS_ID StartSuspended()
+        public AD_PROCESS_ID StartBasmProcess()
         {
             _runner.StartSuspended();
             return _runner.ProcessId;
@@ -33,11 +33,16 @@ namespace VSBASM.Deborgar
             AttachedGuid = attachedGuid;
         }
 
+        public void Launch()
+        {
+            _runner.LaunchProgram();
+        }
+
         public int EnumFrameInfo(enum_FRAMEINFO_FLAGS dwFieldSpec, uint nRadix, out IEnumDebugFrameInfo2 ppEnum)
         {
             FRAMEINFO frameinfo;
             var context = _sourceFile.GetAddressContext(_runner.ExecutionState.ProgramCounter);
-            var frame = new AD7StackFrame(context, _runner.ExecutionState);
+            var frame = new StackFrame(context, _runner.ExecutionState);
             frame.SetFrameInfo(dwFieldSpec, out frameinfo);
             ppEnum = new AD7FrameInfoEnum(new FRAMEINFO[] { frameinfo });
             return VSConstants.S_OK;
@@ -65,8 +70,8 @@ namespace VSBASM.Deborgar
         }
         public int GetEngineInfo(out string pbstrEngine, out Guid pguidEngine)
         {
-            pbstrEngine = AD7Engine.DebugEngineName;
-            pguidEngine = AD7Engine.DebugEngineGuid;
+            pbstrEngine = DebugEngine.DebugEngineName;
+            pguidEngine = DebugEngine.DebugEngineGuid;
             return VSConstants.S_OK;
         }
 
@@ -160,8 +165,8 @@ namespace VSBASM.Deborgar
 
         int IDebugProgramNode2.GetEngineInfo(out string engineName, out Guid engineGuid)
         {
-            engineName = AD7Engine.DebugEngineName;
-            engineGuid = AD7Engine.DebugEngineGuid;
+            engineName = DebugEngine.DebugEngineName;
+            engineGuid = DebugEngine.DebugEngineGuid;
             return VSConstants.S_OK;
         }
 
