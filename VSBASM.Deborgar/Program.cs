@@ -12,13 +12,15 @@ namespace VSBASM.Deborgar
         private const string _programName = "BASM Program";
 
         private readonly BasmRunner _runner;
+        private readonly BasmBreakpointBackend _breakpointBackend;
         private readonly SourceFile _sourceFile;
 
         public Guid AttachedGuid { get; private set; }
 
-        public Program(BasmRunner runner, SourceFile sourceFile)
+        public Program(BasmRunner runner, BasmBreakpointBackend bpBackend, SourceFile sourceFile)
         {
             _runner = runner;
+            _breakpointBackend = bpBackend;
             _sourceFile = sourceFile;
         }
 
@@ -92,12 +94,23 @@ namespace VSBASM.Deborgar
 
         public int Continue(IDebugThread2 pThread)
         {
-            throw new NotImplementedException();
+            return ExecuteOnThread(pThread);
         }
 
-        public int Step(IDebugThread2 pThread, enum_STEPKIND sk, enum_STEPUNIT Step)
+        public int ExecuteOnThread(IDebugThread2 pThread)
         {
-            throw new NotImplementedException();
+            _breakpointBackend.Continue();
+            return VSConstants.S_OK;
+        }
+
+        public int Step(IDebugThread2 pThread, enum_STEPKIND sk, enum_STEPUNIT step)
+        {
+            if (sk == enum_STEPKIND.STEP_INTO || sk == enum_STEPKIND.STEP_OUT || sk == enum_STEPKIND.STEP_OVER)
+            {
+                _breakpointBackend.Step();
+                return VSConstants.S_OK;
+            }
+            return VSConstants.E_NOTIMPL;
         }
 
         public int CauseBreak()
@@ -151,12 +164,6 @@ namespace VSBASM.Deborgar
         public int WriteDump(enum_DUMPTYPE DUMPTYPE, string pszDumpUrl)
         {
             return VSConstants.E_NOTIMPL;
-        }
-        
-        public int ExecuteOnThread(IDebugThread2 pThread)
-        {
-            _runner.Continue();
-            return VSConstants.S_OK;
         }
 
         #endregion

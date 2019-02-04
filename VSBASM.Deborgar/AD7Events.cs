@@ -95,11 +95,6 @@ namespace VSBASM.Deborgar
         public const string IID = "e8414a3e-1642-48ec-829e-5f4040e16da9";
     }
 
-    sealed class AD7AsyncBreakCompleteEvent : AD7StoppingEvent, IDebugBreakEvent2
-    {
-        public const string IID = "c7405d1d-e24b-44e0-b707-d8a5a4e1641b";
-    }
-
     sealed class AD7BreakpointBoundEvent : AD7AsynchronousEvent, IDebugBreakpointBoundEvent2
     {
         public const string IID = "1dddb704-cf99-4b8a-b746-dabb01dd13a0";
@@ -142,5 +137,10 @@ namespace VSBASM.Deborgar
             ppEnum = _boundBreakpoints;
             return VSConstants.S_OK;
         }
+    }
+
+    sealed class AD7StepCompleteEvent : AD7StoppingEvent, IDebugStepCompleteEvent2
+    {
+        public const string IID = "0F7F24C1-74D9-4EA6-A3EA-7EDB2D81441D";
     }
 }

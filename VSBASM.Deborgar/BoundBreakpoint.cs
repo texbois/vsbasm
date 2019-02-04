@@ -22,7 +22,7 @@ namespace VSBASM.Deborgar
 
         public void CompleteBind()
         {
-            _backend.Set(_resolution);
+            _backend.SetBreakpoint(_resolution.Address);
         }
 
         #region IDebugBoundBreakpoint2 Members
@@ -32,7 +32,7 @@ namespace VSBASM.Deborgar
             if (!_deleted)
             {
                 _deleted = true;
-                _backend.Unset(_resolution);
+                _backend.RemoveBreakpoint(_resolution.Address);
                 _pendingBreakpoint.OnBoundBreakpointDeleted(this);
             }
 
@@ -46,9 +46,9 @@ namespace VSBASM.Deborgar
             {
                 _enabled = enabled;
                 if (enabled)
-                    _backend.Set(_resolution);
+                    _backend.SetBreakpoint(_resolution.Address);
                 else
-                    _backend.Unset(_resolution);
+                    _backend.RemoveBreakpoint(_resolution.Address);
             }
             return VSConstants.S_OK;
         }

@@ -5,19 +5,18 @@ namespace VSBASM.Deborgar
 {
     class BreakpointManager
     {
-        private IDebugProgram2 _program;
-        private SourceFile _sourceFile;
+        private readonly IDebugProgram2 _program;
+        private readonly BasmBreakpointBackend _backend;
+        private readonly SourceFile _sourceFile;
+        private readonly EngineCallbacks _callbacks;
 
-        private BasmBreakpointBackend _backend;
-        private List<PendingBreakpoint> _pendingBreakpoints = new List<PendingBreakpoint>();
-        private EngineCallbacks _callbacks;
+        private readonly List<PendingBreakpoint> _pendingBreakpoints = new List<PendingBreakpoint>();
 
-        public BreakpointManager(IDebugProgram2 program, BasmRunner runner, SourceFile sourceFile, EngineCallbacks callbacks)
+        public BreakpointManager(IDebugProgram2 program, BasmBreakpointBackend backend, SourceFile sourceFile, EngineCallbacks callbacks)
         {
             _program = program;
             _sourceFile = sourceFile;
-
-            _backend = new BasmBreakpointBackend(runner);
+            _backend = backend;
             _callbacks = callbacks;
         }
 

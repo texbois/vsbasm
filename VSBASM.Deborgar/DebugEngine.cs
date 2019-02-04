@@ -9,7 +9,7 @@ namespace VSBASM.Deborgar
 {
     [ComVisible(true)]
     [Guid("8355452D-6D2F-41b0-89B8-BB2AA2529E94")]
-    public class DebugEngine : IDebugEngine2, IDebugEngineLaunch2, IDebugEngineProgram2
+    public class DebugEngine : IDebugEngine2, IDebugEngineLaunch2
     {
         public const string DebugEngineId = "{8355452D-6D2F-41b0-89B8-BB2AA2529E94}";
         public const string DebugEngineName = "BASM";
@@ -27,14 +27,15 @@ namespace VSBASM.Deborgar
             Debug.Assert(_program == null);
 
             var sourceFile = new SourceFile(Path.Combine(dir, exe));
-            var runner = new BasmRunner(sourceFile, OnProgramStop);
-            _program = new Program(runner, sourceFile);
+            var runner = new BasmRunner(sourceFile, OnProgramStop, OnProgramStepComplete);
+            var bpBackend = new BasmBreakpointBackend(runner);
+            _program = new Program(runner, bpBackend, sourceFile);
 
             var processId = _program.StartBasmProcess();
             EngineUtils.RequireOk(port.GetProcess(processId, out process));
 
             _callbacks = new EngineCallbacks(this, _program, process, ad7Callback);
-            _breakpointManager = new BreakpointManager(_program, runner, sourceFile, _callbacks);
+            _breakpointManager = new BreakpointManager(_program, bpBackend, sourceFile, _callbacks);
 
             Debug.WriteLine("IDebugEngineLaunch2.LaunchSuspended: returning S_OK");
             return VSConstants.S_OK;
@@ -104,14 +105,18 @@ namespace VSBASM.Deborgar
             }
         }
 
+        public void OnProgramStepComplete()
+        {
+            _callbacks.OnStepComplete();
+        }
+
         #region IDebugEngine2 Members
 
-        // Requests that all programs being debugged by this DE stop execution the next time one of their threads attempts to run.
+        // Requests that the program stops execution the next time one of their threads attempts to run.
         // This is normally called in response to the user clicking on the pause button in the debugger.
-        // When the break is complete, an AsyncBreakComplete event will be sent back to the debugger.
         int IDebugEngine2.CauseBreak()
         {
-            return ((IDebugProgram2) this).CauseBreak();
+            return VSConstants.E_NOTIMPL;
         }
 
         int IDebugEngine2.CreatePendingBreakpoint(IDebugBreakpointRequest2 pBPRequest, out IDebugPendingBreakpoint2 ppPendingBP)
@@ -123,7 +128,9 @@ namespace VSBASM.Deborgar
 
         int IDebugEngine2.DestroyProgram(IDebugProgram2 program)
         {
-            return program.Terminate();
+            EngineUtils.RequireOk(program.Terminate());
+            _callbacks.OnProgramTerminated();
+            return VSConstants.S_OK;
         }
 
         int IDebugEngine2.GetEngineId(out Guid guidEngine)
@@ -178,30 +185,6 @@ namespace VSBASM.Deborgar
         int IDebugEngineLaunch2.TerminateProcess(IDebugProcess2 process)
         {
             return process.Terminate();
-        }
-
-        #endregion
-
-        #region IDebugEngineProgram2 Members
-
-        // Called when this program is being debugged in a multi-program environment. This engine only has one program per-process.
-        public int Stop()
-        {
-            throw new NotImplementedException();
-        }
-
-        // WatchForExpressionEvaluationOnThread is used to cooperate between two different engines debugging 
-        // the same process. This engine doesn't cooperate with other engines.
-        public int WatchForExpressionEvaluationOnThread(IDebugProgram2 pOriginatingProgram, uint dwTid, uint dwEvalFlags, IDebugEventCallback2 pExprCallback, int fWatch)
-        {
-            return VSConstants.S_OK;
-        }
-
-        // WatchForThreadStep is used to cooperate between two different engines debugging the same process.
-        // This engine doesn't cooperate with other engines.
-        public int WatchForThreadStep(IDebugProgram2 pOriginatingProgram, uint dwTid, int fWatch, uint dwFrame)
-        {
-            return VSConstants.S_OK;
         }
 
         #endregion

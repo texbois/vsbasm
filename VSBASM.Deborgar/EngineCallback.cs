@@ -46,6 +46,11 @@ namespace VSBASM.Deborgar
             Send(new AD7ProgramDestroyEvent(), AD7ProgramDestroyEvent.IID);
         }
 
+        public void OnStepComplete()
+        {
+            Send(new AD7StepCompleteEvent(), AD7StepCompleteEvent.IID);
+        }
+
         private void Send(IDebugEvent2 eventObject, string iidEvent)
         {
             uint attributes;

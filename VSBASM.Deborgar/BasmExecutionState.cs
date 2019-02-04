@@ -10,5 +10,11 @@
             ProgramCounter = programCounter;
             Accumulator = accumulator;
         }
+
+        public BasmExecutionState(uint newProgramCounter, BasmExecutionState oldState)
+        {
+            ProgramCounter = newProgramCounter;
+            Accumulator = oldState.Accumulator;
+        }
     }
 }
