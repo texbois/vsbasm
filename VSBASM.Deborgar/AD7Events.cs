@@ -143,4 +143,9 @@ namespace VSBASM.Deborgar
     {
         public const string IID = "0F7F24C1-74D9-4EA6-A3EA-7EDB2D81441D";
     }
+          
+    sealed class AD7BreakCompleteEvent : AD7StoppingEvent, IDebugBreakEvent2
+    {
+        public const string IID = "c7405d1d-e24b-44e0-b707-d8a5a4e1641b";
+    }
 }

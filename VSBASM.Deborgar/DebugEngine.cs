@@ -27,8 +27,8 @@ namespace VSBASM.Deborgar
             Debug.Assert(_program == null);
 
             var sourceFile = new SourceFile(Path.Combine(dir, exe));
-            var runner = new BasmRunner(sourceFile, OnProgramStop, OnProgramStepComplete);
-            var bpBackend = new BasmBreakpointBackend(runner);
+            var runner = new BasmRunner(sourceFile, OnProgramStop);
+            var bpBackend = new BasmBreakpointBackend(runner, OnProgramStepComplete, OnProgramBreakComplete);
             _program = new Program(runner, bpBackend, sourceFile);
 
             var processId = _program.StartBasmProcess();
@@ -108,6 +108,11 @@ namespace VSBASM.Deborgar
         public void OnProgramStepComplete()
         {
             _callbacks.OnStepComplete();
+        }
+
+        public void OnProgramBreakComplete()
+        {
+            _callbacks.OnBreakComplete();
         }
 
         #region IDebugEngine2 Members

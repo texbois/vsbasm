@@ -6,8 +6,8 @@ using VSBASM.Language;
 
 namespace VSBASM.Package
 {
-    [ProvideDebugEngine(AD7Engine.DebugEngineName, typeof(AD7Engine), AD7Engine.DebugEngineId)]
-    [ProvideDebugLanguage(Constants.LanguageName, Constants.LanguageId, AD7Engine.DebugEngineId)]
+    [ProvideDebugEngine(DebugEngine.DebugEngineName, typeof(DebugEngine), DebugEngine.DebugEngineId)]
+    [ProvideDebugLanguage(Constants.LanguageName, Constants.LanguageId, DebugEngine.DebugEngineId)]
     [ProvideService(typeof(BasmLanguageService), ServiceName = "BasmLanguageService")]
     [ProvideLanguageService(typeof(BasmLanguageService),
         Constants.LanguageName,

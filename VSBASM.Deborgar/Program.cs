@@ -115,7 +115,8 @@ namespace VSBASM.Deborgar
 
         public int CauseBreak()
         {
-            throw new NotImplementedException();
+            _breakpointBackend.Break();
+            return VSConstants.S_OK;
         }
 
         public int GetDebugProperty(out IDebugProperty2 ppProperty)

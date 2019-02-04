@@ -51,6 +51,11 @@ namespace VSBASM.Deborgar
             Send(new AD7StepCompleteEvent(), AD7StepCompleteEvent.IID);
         }
 
+        public void OnBreakComplete()
+        {
+            Send(new AD7BreakCompleteEvent(), AD7BreakCompleteEvent.IID);
+        }
+
         private void Send(IDebugEvent2 eventObject, string iidEvent)
         {
             uint attributes;

@@ -1,15 +1,16 @@
 ﻿using Microsoft.VisualStudio.Debugger.Interop;
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace VSBASM.Deborgar
 {
     class BasmRunner
     {
         public delegate void OnStop(uint address);
-        public delegate void OnStepComplete();
 
         public AD_PROCESS_ID ProcessId { get; private set; }
         public BasmExecutionState ExecutionState { get; private set; }
@@ -17,14 +18,14 @@ namespace VSBASM.Deborgar
         private Process _process;
         private SourceFile _sourceFile;
         private OnStop _onStopHandler;
-        private OnStepComplete _onStepHandler;
         private bool _isInRunMode = false;
 
-        public BasmRunner(SourceFile sourceFile, OnStop stopHandler, OnStepComplete stepHandler)
+        private Thread _execThread;
+
+        public BasmRunner(SourceFile sourceFile, OnStop stopHandler)
         {
             _sourceFile = sourceFile;
             _onStopHandler = stopHandler;
-            _onStepHandler = stepHandler;
         }
 
         ~BasmRunner()
@@ -72,25 +73,48 @@ namespace VSBASM.Deborgar
         {
             SetAddressToPC();
             SetRunMode(true);
-            RunUpdatingState(resetAccAndIO: true);
-            _onStopHandler(ExecutionState.ProgramCounter);
+            _process.StandardInput.WriteLine("start");
+            _process.StandardOutput.ReadLine();
+            AwaitOnThread(onFinish: () => _onStopHandler(ExecutionState.ProgramCounter));
         }
 
-        public void Step(bool executeStepHandler)
+        public void Step(Action onStepComplete)
         {
             SetRunMode(false);
             SetAddressToPC();
-            RunUpdatingState(resetAccAndIO: false);
-            ExecutionState = new BasmExecutionState(ExecutionState.ProgramCounter + 1, ExecutionState);
-            if (executeStepHandler) _onStepHandler();
+            _process.StandardInput.WriteLine("continue");
+            _process.StandardOutput.ReadLine();
+            AwaitOnThread(onFinish: () =>
+            {
+                ExecutionState = new BasmExecutionState(ExecutionState.ProgramCounter + 1, ExecutionState);
+                onStepComplete();
+            });
+        }
+
+        public void BreakExecution()
+        {
+            Thread execThread = _execThread;
+            if (execThread != null)
+            {
+                execThread.Abort();
+                _execThread = null;
+
+                _isInRunMode = false;
+                _process.StandardInput.WriteLine("run");
+                string output = _process.StandardOutput.ReadLine();
+                output = _process.StandardOutput.ReadLine();
+                ExecutionState = ParseExecutionState(output);
+                ExecutionState = new BasmExecutionState(ExecutionState.ProgramCounter + 1, ExecutionState);
+            }
         }
 
         public void Continue()
         {
             SetRunMode(true);
             SetAddressToPC();
-            RunUpdatingState(resetAccAndIO: false);
-            _onStopHandler(ExecutionState.ProgramCounter);
+            _process.StandardInput.WriteLine("continue");
+            _process.StandardOutput.ReadLine();
+            AwaitOnThread(onFinish: () => _onStopHandler(ExecutionState.ProgramCounter));
         }
 
         public string GetContents(uint address)
@@ -125,23 +149,37 @@ namespace VSBASM.Deborgar
             {
                 _isInRunMode = shouldRun;
                 _process.StandardInput.WriteLine("run");
-                _process.StandardOutput.ReadLine();
+                string output = _process.StandardOutput.ReadLine();
+                Debug.Assert(output.StartsWith("Режим работы:"), output);
             }
         }
 
-        private void RunUpdatingState(bool resetAccAndIO)
+        private void AwaitOnThread(Action onFinish)
         {
-            _process.StandardInput.WriteLine(resetAccAndIO ? "start" : "continue");
-            _process.StandardOutput.ReadLine();
-            _process.StandardOutput.ReadLine(); // wait for the program to halt
+            Debug.Assert(_execThread == null, "ExecuteOnThread called when another thread is observing the program");
 
-            _process.StandardInput.WriteLine("read");
-            _process.StandardOutput.ReadLine(); // Адр Знчн  СК  РА  РК   РД    А  C Адр Знчн
-            string line = _process.StandardOutput.ReadLine(); // final program state
+            _execThread = new Thread(() =>
+            {
+                _process.StandardOutput.ReadLine(); // wait for the program to halt
 
-            ExecutionState = new BasmExecutionState(
-                programCounter: uint.Parse(line.Split()[0], NumberStyles.HexNumber) - 1,
-                accumulator: uint.Parse(line.Split()[6], NumberStyles.HexNumber)
+                _process.StandardInput.WriteLine("read");
+                _process.StandardOutput.ReadLine(); // Адр Знчн  СК  РА  РК   РД    А  C Адр Знчн
+                string line = _process.StandardOutput.ReadLine(); // final program state
+
+                ExecutionState = ParseExecutionState(line);
+                _execThread = null;
+                onFinish();
+            });
+            _execThread.Start();
+        }
+
+        private static BasmExecutionState ParseExecutionState(string infoLine)
+        {
+            string[] parts = infoLine.Split();
+            // Адр Знчн  СК  РА  РК   РД    А  C Адр Знчн
+            return new BasmExecutionState(
+                programCounter: uint.Parse(parts[0], NumberStyles.HexNumber) - 1,
+                accumulator: uint.Parse(parts[6], NumberStyles.HexNumber)
             );
         }
 
